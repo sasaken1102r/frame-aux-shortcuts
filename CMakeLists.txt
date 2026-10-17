@@ -104,6 +104,26 @@ foreach(target frame-aux-shortcuts frame-aux-shortcuts-panel)
   )
 endforeach()
 
+# Keep Release's normal speed optimization; remove code unused by each executable.
+option(FRAME_AUX_OPTIMIZE_RELEASE "Enable Release LTO and unused-code removal" ON)
+if(FRAME_AUX_OPTIMIZE_RELEASE)
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT frame_aux_ipo_supported OUTPUT frame_aux_ipo_error LANGUAGES CXX)
+  foreach(target frame-aux-core frame-aux-ui frame-aux-vr frame-aux-shortcuts frame-aux-shortcuts-panel)
+    if(frame_aux_ipo_supported)
+      set_property(TARGET ${target} PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+    endif()
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+      target_compile_options(${target} PRIVATE $<$<CONFIG:Release>:-ffunction-sections> $<$<CONFIG:Release>:-fdata-sections>)
+    endif()
+  endforeach()
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    foreach(target frame-aux-shortcuts frame-aux-shortcuts-panel)
+      target_link_options(${target} PRIVATE $<$<CONFIG:Release>:-Wl,--gc-sections>)
+    endforeach()
+  endif()
+endif()
+
 install(TARGETS frame-aux-shortcuts frame-aux-shortcuts-panel RUNTIME DESTINATION bin)
 
 # 単体テスト（押し方の判定・明るさ・設定の読み書きと version 1 からの移行・状態ファイル・視界の表示の中身・

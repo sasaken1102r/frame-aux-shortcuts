@@ -1,0 +1,84 @@
+name: Linux tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      compare_original:
+        description: Compare original Release settings on this runner
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ninja-build libcairo2-dev libfreetype-dev libvulkan-dev libsystemd-dev fonts-noto-cjk
+          mkdir -p "$RUNNER_TEMP/openvr"
+          case "$(uname -m)" in
+            aarch64) sdk_arch=linuxarm64 ;;
+            x86_64) sdk_arch=linux64 ;;
+            *) exit 1 ;;
+          esac
+          curl --fail --location --retry 3 "https://raw.githubusercontent.com/ValveSoftware/openvr/0924064316de3effbcd1acf1e309182a2deb1c05/lib/$sdk_arch/libopenvr_api.so" -o "$RUNNER_TEMP/openvr/libopenvr_api.so"
+      - name: Build and test
+        env:
+          LD_LIBRARY_PATH: ${{ runner.temp }}/openvr
+          COMPARE_ORIGINAL: ${{ inputs.compare_original || 'false' }}
+        run: |
+          mkdir -p ci-results
+          c++ --version >ci-results/compiler.txt
+          git rev-parse HEAD >ci-results/source-commit.txt
+          modes=ON
+          if [ "$COMPARE_ORIGINAL" = true ]; then modes="OFF ON"; fi
+          for mode in $modes; do
+            build="build-$mode"
+            result="ci-results/$mode"
+            mkdir -p "$result"
+            cmake -G Ninja -S . -B "$build" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DFRAME_AUX_OPTIMIZE_RELEASE="$mode" -DOPENVR_LIB_DIR="$RUNNER_TEMP/openvr"
+            cmake --build "$build" --parallel 4
+            ctest --test-dir "$build" --output-on-failure
+            cp "$build/Testing/Temporary/LastTest.log" "$result/LastTest.log"
+            for bin in frame-aux-shortcuts frame-aux-shortcuts-panel; do
+              cp "$build/$bin" "$result/$bin"
+              strip "$result/$bin"
+              stat -c '%n %s' "$result/$bin" >>ci-results/sizes.txt
+              sha256sum "$result/$bin" >>ci-results/SHA256SUMS
+              "$build/$bin" --version
+              readelf -d "$result/$bin" >"$result/$bin-dependencies.txt"
+            done
+            for language in en ja; do
+              for tab in assign brightness press commands display app; do
+                "$build/frame-aux-shortcuts-panel" --dump-png "$result/panel-$language-$tab.png" --language "$language" --tab "$tab" --config "$RUNNER_TEMP/aux-test-config.json"
+              done
+            done
+            "$build/frame-aux-shortcuts" --dump-hud-png "$result/hud" --config "$RUNNER_TEMP/aux-test-config.json"
+          done
+          if [ "$COMPARE_ORIGINAL" = true ]; then
+            find ci-results/OFF -name '*.png' -printf '%P\n' | while IFS= read -r image; do
+              cmp "ci-results/OFF/$image" "ci-results/ON/$image"
+              printf '%s identical\n' "$image" >>ci-results/images.txt
+            done
+          fi
+          sh vendor/frame-updater/verify.sh --local-only
+          sh vendor/frame-apps/verify.sh --local-only
+          cat ci-results/sizes.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: validation-${{ matrix.runner }}
+          path: ci-results/
+          retention-days: 14
