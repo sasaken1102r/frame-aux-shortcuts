@@ -56,6 +56,9 @@ jobs:
           mkdir -p ci-results
           "$CXX" --version >ci-results/compiler.txt
           git rev-parse HEAD >ci-results/source-commit.txt
+          # Preview PNGs include a clock label. Give both builds the same input time.
+          printf '%s\n' '#include <time.h>' 'time_t time(time_t* out) { const time_t fixed = 1700000000; if (out) *out = fixed; return fixed; }' >"$RUNNER_TEMP/fixed-time.c"
+          cc -shared -fPIC "$RUNNER_TEMP/fixed-time.c" -o "$RUNNER_TEMP/fixed-time.so"
           modes=ON
           if [ "$COMPARE_ORIGINAL" = true ]; then modes="OFF ON"; fi
           for mode in $modes; do
@@ -80,10 +83,10 @@ jobs:
             done
             for language in en ja; do
               for tab in assign brightness press commands display app; do
-                "$build/frame-aux-shortcuts-panel" --dump-png "$result/panel-$language-$tab.png" --language "$language" --tab "$tab" --config "$RUNNER_TEMP/aux-test-config.json"
+                TZ=UTC LD_PRELOAD="$RUNNER_TEMP/fixed-time.so" "$build/frame-aux-shortcuts-panel" --dump-png "$result/panel-$language-$tab.png" --language "$language" --tab "$tab" --config "$RUNNER_TEMP/aux-test-config.json"
               done
             done
-            "$build/frame-aux-shortcuts" --dump-hud-png "$result/hud" --config "$RUNNER_TEMP/aux-test-config.json"
+            TZ=UTC LD_PRELOAD="$RUNNER_TEMP/fixed-time.so" "$build/frame-aux-shortcuts" --dump-hud-png "$result/hud" --config "$RUNNER_TEMP/aux-test-config.json"
           done
           if [ "$COMPARE_ORIGINAL" = true ]; then
             find ci-results/OFF -name '*.png' -printf '%P\n' | while IFS= read -r image; do
