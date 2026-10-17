@@ -19,14 +19,23 @@ jobs:
       fail-fast: false
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
+        compiler: [gcc, clang]
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Build dependencies
+        env:
+          COMPILER: ${{ matrix.compiler }}
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y ninja-build libcairo2-dev libfreetype-dev libvulkan-dev libsystemd-dev fonts-noto-cjk
+          if [ "$COMPILER" = clang ]; then
+            sudo apt-get install -y clang-18 llvm-18-linker-tools
+            echo CXX=clang++-18 >>"$GITHUB_ENV"
+          else
+            echo CXX=g++ >>"$GITHUB_ENV"
+          fi
           sudo mkdir -p /usr/share/fonts/noto-cjk
           for weight in Regular Bold; do
             sudo ln -s "/usr/share/fonts/opentype/noto/NotoSansCJK-$weight.ttc" "/usr/share/fonts/noto-cjk/NotoSansCJK-$weight.ttc"
@@ -42,9 +51,10 @@ jobs:
         env:
           LD_LIBRARY_PATH: ${{ runner.temp }}/openvr
           COMPARE_ORIGINAL: ${{ inputs.compare_original || 'false' }}
+          COMPILER: ${{ matrix.compiler }}
         run: |
           mkdir -p ci-results
-          c++ --version >ci-results/compiler.txt
+          "$CXX" --version >ci-results/compiler.txt
           git rev-parse HEAD >ci-results/source-commit.txt
           modes=ON
           if [ "$COMPARE_ORIGINAL" = true ]; then modes="OFF ON"; fi
@@ -52,8 +62,12 @@ jobs:
             build="build-$mode"
             result="ci-results/$mode"
             mkdir -p "$result/hud"
-            cmake -G Ninja -S . -B "$build" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DFRAME_AUX_OPTIMIZE_RELEASE="$mode" -DOPENVR_LIB_DIR="$RUNNER_TEMP/openvr"
+            cmake -G Ninja -S . -B "$build" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DCMAKE_CXX_COMPILER="$CXX" -DFRAME_AUX_OPTIMIZE_RELEASE="$mode" -DOPENVR_LIB_DIR="$RUNNER_TEMP/openvr"
             cmake --build "$build" --parallel 4
+            ninja -C "$build" -t commands >"$result/build-commands.txt"
+            if [ "$COMPILER" = clang ] && [ "$mode" = ON ]; then
+              grep -E -- '-flto[^ ]*.*-o frame-aux-unit-test ' "$result/build-commands.txt"
+            fi
             ctest --test-dir "$build" --output-on-failure
             cp "$build/Testing/Temporary/LastTest.log" "$result/LastTest.log"
             for bin in frame-aux-shortcuts frame-aux-shortcuts-panel; do
@@ -83,6 +97,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: validation-${{ matrix.runner }}
+          name: validation-${{ matrix.runner }}-${{ matrix.compiler }}
           path: ci-results/
           retention-days: 14
