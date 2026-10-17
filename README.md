@@ -164,6 +164,8 @@ ctest --test-dir build --output-on-failure   # unit tests, no hardware needed
 scripts/package.sh                           # release tarball and SHA256SUMS in dist/
 ```
 
+Release builds use link-time optimization when the compiler supports it and remove unused code, keeping the usual speed optimization. Set `-DFRAME_AUX_OPTIMIZE_RELEASE=OFF` to compare with the original build settings.
+
 `--help` lists the options of each program (for example `--show-keymap`, `--test-action TYPE`, `--dump-png`). `vendor/frame-updater/` and `vendor/frame-apps/` are copies of the author's shared updater and app list; don't edit them here.
 
 ## License
