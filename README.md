@@ -29,7 +29,7 @@ Six or more presses do nothing, so a miscount never fires the wrong action. The 
 Actions you can assign:
 
 - **Mic mute**: toggles the default mic's mute (`wpctl`).
-- **Brightness**: steps through 2–4 levels (40–125 %, default 100 → 60 → 40 %), the same setting as SteamVR's brightness slider.
+- **Brightness**: steps through 2–4 levels (10–125 %, default 100 → 60 → 40 %), the same setting as SteamVR's brightness slider. Levels below 40 % go past the slider's lower end; the Frame's display driver accepts down to about 9 %.
 - **Passthrough**: on / off, through a private SteamVR interface (see [How it works](#how-it-works)).
 - **Screenshot**: saves what you see to `~/Pictures/frame-aux-shortcuts/` and adds it to Steam's screenshots.
 - **Perf overlay**: shows or hides [frame-perf-overlay](https://github.com/sasaken1102r/frame-perf-overlay), if it is installed and running.

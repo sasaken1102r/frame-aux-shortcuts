@@ -197,7 +197,7 @@ UiText makeJapanese() {
     t.brightRemove = "この段を消す";
     t.brightAdd = "段を足す";
     t.brightLoop = "1 段目に戻る";
-    t.brightNote = "2〜4 段まで。40〜125%（100% が SteamVR の標準）。押したときは、いまの明るさに一番近い段の次へ進みます";
+    t.brightNote = "2〜4 段まで。10〜125%（100% が SteamVR の標準。SteamVR の設定画面は 40% まで）。押したときは、いまの明るさに一番近い段の次へ進みます";
     t.pressHeading = "押し方の決まり方";
     t.longTitle = "長押し";
     t.longHint = "この時間より長く押し続けると、離す前に長押しに決まります";
@@ -498,7 +498,7 @@ UiText makeEnglish() {
     t.brightRemove = "Remove";
     t.brightAdd = "Add step";
     t.brightLoop = "Back to step 1";
-    t.brightNote = "2 to 4 steps, 40–125% (100% is SteamVR's default). A press moves to the step after the one closest to the current brightness";
+    t.brightNote = "2 to 4 steps, 10–125% (100% is SteamVR's default; its slider stops at 40%). A press moves to the step after the one closest to the current brightness";
     t.pressHeading = "How presses are decided";
     t.longTitle = "Long press";
     t.longHint = "Hold longer than this and it becomes a long press before you let go";

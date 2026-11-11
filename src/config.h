@@ -67,10 +67,13 @@ constexpr bool isTapSlot(int slot) {
 /** 設定ファイルの形の版（3 からコマンドは commands に登録して id で割り当てる）。 */
 constexpr int kConfigVersion = 3;
 
-/** 明るさの段の数と範囲（スライダーの %）。SteamVR の設定画面と同じ範囲。 */
+/**
+ * 明るさの段の数と範囲（スライダーの %）。上は SteamVR の設定画面と同じ 125%。
+ * 下は設定画面の 40%（DisplayMinUIAnalogGain）ではなく、Frame のドライバーの下限（DisplayMinAnalogGain 0.005、約 9%）の上の 10%。
+ */
 constexpr int kMinBrightnessLevels = 2;
 constexpr int kMaxBrightnessLevels = 4;
-constexpr double kMinBrightnessPct = 40.0;
+constexpr double kMinBrightnessPct = 10.0;
 constexpr double kMaxBrightnessPct = 125.0;
 constexpr double kBrightnessStepPct = 5.0;
 
@@ -102,7 +105,7 @@ std::string expandHome(const std::string& path);
 struct Config {
     int longPressMs = 600;        ///< 長押しとみなすまでの時間（ms、100〜5000）
     int multiPressGapMs = 350;    ///< 最後に離してから回数を確定するまでの時間（ms、100〜2000）
-    std::vector<double> brightnessLevels = {100.0, 60.0, 40.0};  ///< 明るさの段（スライダーの %。2〜4 段、40〜125、5 刻み）
+    std::vector<double> brightnessLevels = {100.0, 60.0, 40.0};  ///< 明るさの段（スライダーの %。2〜4 段、10〜125、5 刻み）
     bool soundEnabled = true;     ///< false で手応えの音を鳴らさない
     std::string successSound = kDefaultSuccessSound;  ///< 成功の音（空なら鳴らさない）
     std::string failureSound = kDefaultFailureSound;  ///< 失敗の音（空なら鳴らさない）
@@ -160,7 +163,7 @@ const char* actionTypeName(ActionType type);
 bool parseActionType(const std::string& name, ActionType& type);
 
 /**
- * 明るさの段を決まりに合わせる（40〜125 に収めて 5 刻みに丸め、2〜4 段にする）。
+ * 明るさの段を決まりに合わせる（10〜125 に収めて 5 刻みに丸め、2〜4 段にする）。
  * @param levels 段（書き換える）
  * @param warnings 直したときの知らせの追加先（nullptr なら知らせない）
  * @return 使える段になったら true（足りないときは false で、levels は変えない）

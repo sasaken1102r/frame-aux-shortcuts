@@ -238,7 +238,7 @@ void testConfig() {
             "version": 2,
             "long_press_ms": 800,
             "multi_press_gap_ms": 50,
-            "brightness_levels": [100, 72, 30, 200, 90],
+            "brightness_levels": [100, 72, 5, 200, 90],
             "sound": { "enabled": false, "success": "/tmp/a.wav" },
             "hud": { "enabled": false, "mute_badge": false },
             "screenshot_dir": "/tmp/shots",
@@ -261,8 +261,8 @@ void testConfig() {
         expect("設定 v2: 読める", ok);
         expect("設定 v2: long_press_ms 800", config.longPressMs == 800);
         expect("設定 v2: multi_press_gap_ms は 100 に収める", config.multiPressGapMs == 100);
-        expect("設定 v2: 明るさの段は 5 刻み・40〜125 に直して 4 段まで",
-               config.brightnessLevels == std::vector<double>({100, 70, 40, 125}));
+        expect("設定 v2: 明るさの段は 5 刻み・10〜125 に直して 4 段まで",
+               config.brightnessLevels == std::vector<double>({100, 70, 10, 125}));
         expect("設定 v2: 5 段目を使わないことを知らせる", has(warnings, "4 段まで"));
         expect("設定 v2: 音を消せる・パスを変えられる、書いていない failure は既定のまま",
                !config.soundEnabled && config.successSound == "/tmp/a.wav" && config.failureSound == kDefaultFailureSound);
@@ -1060,10 +1060,10 @@ void testPanel() {
         for (int i = 0; i < 10; ++i) applyPanelAction({K::LevelInc, 0, 0}, config);
         expect("パネル: 明るさは 125 まで", config.brightnessLevels[0] == 125);
         for (int i = 0; i < 10; ++i) applyPanelAction({K::LevelDec, 2, 0}, config);
-        expect("パネル: 明るさは 40 から", config.brightnessLevels[2] == 40);
-        expect("パネル: 段を足す（最後の段 −20、40 より下にしない）",
+        expect("パネル: 明るさは 10 から", config.brightnessLevels[2] == 10);
+        expect("パネル: 段を足す（最後の段 −20、10 より下にしない）",
                applyPanelAction({K::LevelAdd, 0, 0}, config) && config.brightnessLevels.size() == 4 &&
-                   config.brightnessLevels[3] == 40);
+                   config.brightnessLevels[3] == 10);
         expect("パネル: 4 段より多くは足さない", !applyPanelAction({K::LevelAdd, 0, 0}, config));
         applyPanelAction({K::LevelRemove, 3, 0}, config);
         applyPanelAction({K::LevelRemove, 2, 0}, config);
