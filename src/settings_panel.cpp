@@ -411,7 +411,7 @@ std::string stateText(const UiText& t, const Action& action, const Config& confi
 }
 
 /**
- * 明るさの段を 1 つ動かす（40〜125 の 5 刻み）。
+ * 明るさの段を 1 つ動かす（10〜125 の 5 刻み）。
  * @param value 今の値
  * @param delta 動かす量
  * @return 新しい値

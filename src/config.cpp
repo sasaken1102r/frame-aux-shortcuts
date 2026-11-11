@@ -419,7 +419,7 @@ bool normalizeBrightnessLevels(std::vector<double>& levels, std::vector<std::str
         if (warnings != nullptr) warnings->push_back("brightness_levels は 4 段までなので、5 段目からは使いません");
     }
     if (changed && warnings != nullptr) {
-        warnings->push_back("brightness_levels は 40〜125 の 5 刻みに直しました");
+        warnings->push_back("brightness_levels は 10〜125 の 5 刻みに直しました");
     }
     levels = fixed;
     return true;
